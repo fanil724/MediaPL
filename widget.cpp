@@ -84,12 +84,12 @@ void Widget::on_duration_changed(qint64 duration)
     ui->labelDuration->setText(QString("Duration: ").append(qt_duration.toString("mm:ss")));
 }
 
-void Widget::on_horizontalSliderTrack_valueChanged(int position)
+void Widget::on_horizontalSliderTrack_valueChanged(qint64 position)
 {
      m_player->setPosition(position);
 }
 
-void Widget::on_horizontalSliderTrack_sliderMoved(qint64 position)
+void Widget::on_horizontalSliderTrack_sliderMoved(int position)
 {
      m_player->setPosition(position);
 }

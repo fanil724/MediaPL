@@ -31,9 +31,9 @@ private slots:
 
     void on_duration_changed(qint64 duration);
 
-    void on_horizontalSliderTrack_valueChanged(int position);
+    void on_horizontalSliderTrack_valueChanged(qint64 position);
 
-    void on_horizontalSliderTrack_sliderMoved(qint64 position);
+    void on_horizontalSliderTrack_sliderMoved(int position);
 
 private:
     Ui::Widget *ui;
