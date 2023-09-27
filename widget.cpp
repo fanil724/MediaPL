@@ -16,9 +16,11 @@ Widget::Widget(QWidget *parent)
     ui->pushButtonPause->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
     ui->pushButtonStop->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
     ui->pushButtonNext->setIcon(style()->standardIcon(QStyle::SP_MediaSkipForward));
+    ui->pushButtonMute->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
 
     m_player=new QMediaPlayer(this);
     m_player->setVolume(70);
+
 
     ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
     ui->horizontalSliderVolume->setValue(m_player->volume());
@@ -27,6 +29,31 @@ Widget::Widget(QWidget *parent)
     connect(m_player,&QMediaPlayer::positionChanged,this,&Widget::on_position_changed);
     connect(m_player,&QMediaPlayer::durationChanged,this,&Widget::on_duration_changed);
 
+    ////////////////////////////////////// PlayList
+
+    m_playList_model=new QStandardItemModel(this);
+    ui->playListView->setModel(m_playList_model);
+    m_playList_model->setHorizontalHeaderLabels(QStringList()<<tr("Audio track")<<tr("File Path"));
+
+    ui->playListView->hideColumn(1);
+    //ui->playListView->verticalHeader()->setVisible(false);
+    ui->playListView->horizontalHeader()->setStretchLastSection(true);
+
+    ui->playListView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->playListView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->playListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+
+    m_playList =new QMediaPlaylist(m_player);
+    m_player->setPlaylist(m_playList);
+    connect(ui->playListView,&QTableView::doubleClicked,
+            [this](const QModelIndex& index){
+                     m_playList->setCurrentIndex(index.row());m_player->play();ui->pushButtonPlay->setChecked(true);}
+            );
+    connect(m_playList, &QMediaPlaylist::currentIndexChanged,
+            [this](int index){
+            ui->labelComposition->setText(m_playList_model->data(m_playList_model->index(index,0)).toString());}
+            );
 
 }
 
@@ -46,24 +73,23 @@ void Widget::on_horizontalSliderVolume_valueChanged(int value)
 
 void Widget::on_pushButtonOpen_clicked()
 {
-    QString file =QFileDialog::getOpenFileName(this,tr("Open files"),QString(),tr("Audio files (*.mp3)"));
-    m_player->setMedia(QUrl::fromLocalFile(file));
-    ui->labelComposition->setText(file.mid(file.lastIndexOf('/')+1));
+//    QString file =QFileDialog::getOpenFileName(this,tr("Open files"),QString(),tr("Audio files (*.mp3)"));
+//    m_player->setMedia(QUrl::fromLocalFile(file));
+//    ui->labelComposition->setText(file.mid(file.lastIndexOf('/')+1));
+
+    QStringList files =QFileDialog::getOpenFileNames(this,tr("Open files"),
+                                                     QString("C:/Users/Фаниль/Downloads"
+                                                      "/Linkin Park - 2000 - Hybrid Theory "
+                                                      "(20th Anniversary Edition)"),tr("Audio files (*.mp3)"));
+    for(QString filePath: files)
+    {
+        QList<QStandardItem*> items;
+        items.append(new QStandardItem(QDir(filePath).dirName()));
+        items.append(new QStandardItem(filePath));
+        m_playList_model->appendRow(items);
+        m_playList->addMedia(QUrl(filePath));
+    }
 }
-
-
-void Widget::on_pushButtonPlay_clicked()
-{
-    m_player->play();
-
-}
-
-
-void Widget::on_pushButtonPause_clicked()
-{
-    m_player->pause();
-}
-
 
 void Widget::on_pushButtonStop_clicked()
 {
@@ -92,5 +118,80 @@ void Widget::on_horizontalSliderTrack_valueChanged(qint64 position)
 void Widget::on_horizontalSliderTrack_sliderMoved(int position)
 {
      m_player->setPosition(position);
+}
+
+void Widget::on_pushButtonMute_clicked(bool checked)
+{
+        if(checked)
+    {
+        volum=m_player->volume();
+        m_player->setVolume(0);
+        ui->pushButtonMute->setIcon(style()->standardIcon(QStyle::SP_MediaVolumeMuted));
+        ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
+        ui->horizontalSliderVolume->setValue(m_player->volume());
+    }else{
+        m_player->setVolume(volum);
+        ui->pushButtonMute->setIcon(style()->standardIcon(QStyle::SP_MediaVolume));
+        ui->labelVolume->setText(QString("Volume: ").append(QString::number(m_player->volume())));
+        ui->horizontalSliderVolume->setValue(m_player->volume());
+    }
+}
+
+
+void Widget::on_checkBoxLoop_clicked(bool checked)
+{
+    if(checked){
+        m_playList->setPlaybackMode(QMediaPlaylist::Loop);
+    }
+    else{
+        m_playList->setPlaybackMode(QMediaPlaylist::Sequential);
+    }
+}
+
+
+void Widget::on_checkBoxShuffle_clicked(bool checked)
+{
+    if(checked){
+        m_playList->setPlaybackMode(QMediaPlaylist::Random);
+    }
+    else{
+        m_playList->setPlaybackMode(QMediaPlaylist::Sequential);
+    }
+}
+
+
+void Widget::on_pushButtonPrev_clicked()
+{
+    m_playList->previous();
+}
+
+
+void Widget::on_pushButtonNext_clicked()
+{
+    m_playList->next();
+}
+
+
+void Widget::on_pushButtonPlay_clicked(bool checked)
+{
+    if(checked){
+        m_player->play();
+        ui->pushButtonPause->setChecked(false);
+    }else{
+        m_player->setPosition(0);
+        ui->pushButtonPlay->setChecked(true);
+    }
+}
+
+
+void Widget::on_pushButtonPause_clicked(bool checked)
+{
+    if(checked){
+        m_player->pause();
+        ui->pushButtonPlay->setChecked(false);
+    } else{
+         m_player->play();
+         ui->pushButtonPlay->setChecked(true);
+    }
 }
 
